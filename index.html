@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Карточка товара в смарт-витринах</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: одна колонка ~760 px, как страница шоппабл-карточки: сверху где живёт, потом «сейчас → хотим», ниже таблица и вопросы */
+:root{
+  --bg:#f4f4f6; --surface:#ffffff; --fg:#1d1d22; --muted:#6b6b76; --line:#e2e2e8;
+  --accent:#e0262f; --sale:#ff335f; --star:#ffb400; --chip:#ececf1;
+  --ph:#ececef; --ph-ico:#c4c4cc; --badge-bg:#ece6ff; --badge-fg:#7b52e0; --label-bg:#ffe5e8;
+  --ok:#1f8f4e; --ok-bg:#e3f4ea; --no:#b3261e; --no-bg:#fde7e6;
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#141417; --surface:#1e1e23; --fg:#ececf1; --muted:#9a9aa6; --line:#2e2e35;
+  --accent:#ff5a60; --sale:#ff6b8a; --chip:#2c2c33; --ph:#2a2a30; --ph-ico:#4a4a54;
+  --badge-bg:#2f2650; --badge-fg:#b9a3ff; --label-bg:#45222a;
+  --ok:#5fd08e; --ok-bg:#163525; --no:#ff8a80; --no-bg:#3d1c1a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141417; --surface:#1e1e23; --fg:#ececf1; --muted:#9a9aa6; --line:#2e2e35;
+  --accent:#ff5a60; --sale:#ff6b8a; --chip:#2c2c33; --ph:#2a2a30; --ph-ico:#4a4a54;
+  --badge-bg:#2f2650; --badge-fg:#b9a3ff; --label-bg:#45222a;
+  --ok:#5fd08e; --ok-bg:#163525; --no:#ff8a80; --no-bg:#3d1c1a; color-scheme:dark}
+
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:16px;line-height:24px}
+.wrap{max-width:760px;margin:0 auto;padding-block:40px 64px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:48px}
+h1{font-size:32px;line-height:40px;font-weight:700;margin:0;text-wrap:balance}
+h2{font-size:22px;line-height:30px;font-weight:700;margin:0;text-wrap:balance}
+h3{font-size:16px;line-height:24px;font-weight:600;margin:0}
+p{margin:0;text-wrap:pretty}
+.lead{color:var(--muted);font-size:18px;line-height:26px;max-width:62ch}
+section{display:flex;flex-direction:column;gap:16px}
+ul,ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+li{text-wrap:pretty}
+a{color:var(--accent)}
+.num{font-variant-numeric:tabular-nums}
+
+/* сравнение */
+.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.spec{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.tag{align-self:flex-start;font-size:13px;line-height:18px;padding:2px 8px;border-radius:999px;font-weight:500}
+.tag.now{background:var(--chip);color:var(--fg)}
+.tag.want{background:var(--ok-bg);color:var(--ok)}
+.cap{font-size:14px;line-height:20px;color:var(--muted)}
+.grid{display:grid;gap:0}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g2{grid-template-columns:repeat(2,1fr)}
+.cell{padding:6px;display:flex;flex-direction:column;gap:3px;min-width:0;font-size:11px;line-height:14px}
+.div .cell{border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.div.g3 .cell:nth-child(3n),.div.g2 .cell:nth-child(2n){border-right:0}
+.photo{position:relative;aspect-ratio:1;border-radius:12px;background:var(--ph);display:grid;place-items:center;max-width:100%}
+.photo::before{content:"";width:34%;height:34%;border-radius:6px;background:var(--ph-ico)}
+.photo .badge{position:absolute;left:4px;bottom:4px;background:var(--badge-bg);color:var(--badge-fg);border-radius:6px;padding:0 4px;font-size:9px;line-height:13px}
+.photo .dots{position:absolute;right:6px;bottom:7px;display:flex;gap:2px}
+.photo .dots i{width:4px;height:4px;border-radius:50%;background:var(--ph-ico)}
+.photo .dots i:first-child{width:8px;border-radius:2px;background:var(--fg)}
+.photo .heart{position:absolute;right:6px;top:4px;font-size:13px;color:var(--fg)}
+.pr{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.pr b{font-size:12px}
+.lbl{background:var(--label-bg);color:var(--sale);border-radius:5px;padding:0 3px;font-size:9px;line-height:13px}
+.old{color:var(--muted);text-decoration:line-through;font-size:9px}
+.nm{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.wt{color:var(--muted);font-size:9px}
+.rt{font-size:10px;color:var(--muted)}.rt s{color:var(--star);text-decoration:none}
+.btn{border:1px solid var(--line);border-radius:8px;text-align:center;font-size:10px;line-height:20px;margin-top:2px}
+
+/* список изменений */
+.changes{display:flex;flex-direction:column;gap:12px}
+.chg{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 18px;display:flex;flex-direction:column;gap:4px}
+.chg .where{font-size:13px;line-height:18px;color:var(--muted)}
+
+.tbl{overflow-x:auto;background:var(--surface);border-radius:16px;border:1px solid var(--line)}
+table{border-collapse:collapse;width:100%;min-width:620px;font-size:15px;line-height:22px}
+th,td{text-align:left;vertical-align:top;padding:12px 14px;border-bottom:1px solid var(--line)}
+th{font-size:13px;line-height:18px;color:var(--muted);font-weight:500}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:600}
+.pill{display:inline-block;font-size:13px;line-height:18px;padding:2px 8px;border-radius:999px;white-space:nowrap;font-weight:500}
+.yes{background:var(--ok-bg);color:var(--ok)}
+.off{background:var(--no-bg);color:var(--no)}
+.foot{color:var(--muted);font-size:14px;line-height:20px}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header style="display:flex;flex-direction:column;gap:12px">
+  <h1>Карточка товара в&nbsp;смарт-витринах</h1>
+  <p class="lead">Что нам нужно для&nbsp;встраивания карточки в&nbsp;витрину.</p>
+</header>
+
+<section>
+  <h2>Где живёт карточка</h2>
+  <ul>
+    <li><b>Инлайн-витрина</b>: встраивается в&nbsp;контент страницы, горизонтальный скролл. Фон витрины белый, цветной или&nbsp;картинка.</li>
+    <li><b>Оверлей-витрина</b>: шторка поверх экрана. Три раскладки: скролл, 2&nbsp;колонки, 3&nbsp;колонки.</li>
+  </ul>
+  <p><a href="https://www.figma.com/design/g5lzaItWB4XSqI1vN7cwzf/-2.0--%D0%9F%D0%BB%D0%B5%D0%B9%D1%81%D0%BC%D0%B5%D0%BD%D1%82%D1%8B?node-id=17130-76824">Макеты в&nbsp;Figma</a>: слева с&nbsp;текущими карточками, справа как&nbsp;хотим.</p>
+</section>
+
+<section>
+  <h2>Что хотим</h2>
+  <div class="changes">
+    <div class="chg"><h3>Убрать разделители между карточками</h3></div>
+    <div class="chg"><h3>Убрать слайдер на&nbsp;фото</h3><p>Свайп по&nbsp;фото может добавить мисскликов, когда листают карточки в&nbsp;витрине.</p></div>
+    <div class="chg"><h3>Убрать избранное</h3><p>Чтобы не&nbsp;перегружать карточку.</p></div>
+    <div class="chg"><h3>3&nbsp;колонки: компактная карточка</h3>
+      <ul>
+        <li>Без лейбла на&nbsp;фото: он не&nbsp;помещается.</li>
+        <li>Без веса и&nbsp;цены за&nbsp;кг.</li>
+        <li>Без кнопки «В&nbsp;корзину»: тап по&nbsp;карточке ведёт в&nbsp;карточку товара.</li>
+        <li>Число отзывов оставить, но&nbsp;в&nbsp;скобках: <span class="num">4.9 (5912)</span>. Гипотеза: рейтинг без&nbsp;отзывов не&nbsp;имеет смысла. Отзывы влияют на&nbsp;выбор и&nbsp;подкрепляют рейтинг.</li>
+      </ul>
+      </div>
+  </div>
+</section>
+
+<section>
+  <h2>3 колонки: сейчас и как хотим</h2>
+  <div class="pair">
+    <div class="spec">
+      <span class="tag now">Сейчас</span>
+      <div class="grid g3 div">
+        <div class="cell"><div class="photo"><span class="heart">♡</span><span class="badge">Выгодно</span><span class="dots"><i></i><i></i></span></div><div class="pr"><b class="num">443₽</b><span class="lbl">−18%</span></div><span class="old num">457₽</span><span class="nm">Балетки Danceworld ночной сон</span><span class="wt num">400 г · 250 ₽/кг</span><span class="rt"><s>★</s> 5.0</span><span class="btn">В корзину</span></div>
+        <div class="cell"><div class="photo"><span class="heart">♡</span><span class="badge">Выгодно</span><span class="dots"><i></i><i></i></span></div><div class="pr"><b class="num">443₽</b><span class="lbl">−18%</span></div><span class="old num">457₽</span><span class="nm">Балетки Danceworld ночной сон</span><span class="wt num">400 г · 250 ₽/кг</span><span class="rt"><s>★</s> 5.0</span><span class="btn">В корзину</span></div>
+        <div class="cell"><div class="photo"><span class="heart">♡</span><span class="badge">Выгодно</span><span class="dots"><i></i><i></i></span></div><div class="pr"><b class="num">443₽</b><span class="lbl">−18%</span></div><span class="old num">457₽</span><span class="nm">Балетки Danceworld ночной сон</span><span class="wt num">400 г · 250 ₽/кг</span><span class="rt"><s>★</s> 5.0</span><span class="btn">В корзину</span></div>
+      </div>
+          </div>
+    <div class="spec">
+      <span class="tag want">Хотим</span>
+      <div class="grid g3">
+        <div class="cell"><div class="photo"></div><div class="pr"><b class="num">443₽</b><span class="lbl">−18%</span></div><span class="old num">457₽</span><span class="nm">Балетки Danceworld ночной сон</span><span class="rt num"><s>★</s> 4.9 (5912)</span></div>
+        <div class="cell"><div class="photo"></div><div class="pr"><b class="num">443₽</b><span class="lbl">−18%</span></div><span class="old num">457₽</span><span class="nm">Балетки Danceworld ночной сон</span><span class="rt num"><s>★</s> 5.0 (268)</span></div>
+        <div class="cell"><div class="photo"></div><div class="pr"><b class="num">443₽</b><span class="lbl">−18%</span></div><span class="old num">457₽</span><span class="nm">Балетки Danceworld ночной сон</span><span class="rt num"><s>★</s> 5.0 (134)</span></div>
+      </div>
+      <p class="cap">Фото, цена, лейбл скидки, старая цена, название в&nbsp;2&nbsp;строки, рейтинг с&nbsp;отзывами в&nbsp;скобках.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>2 колонки: сейчас и как хотим</h2>
+  <div class="pair">
+    <div class="spec">
+      <span class="tag now">Сейчас</span>
+      <div class="grid g2 div">
+        <div class="cell"><div class="photo"><span class="heart">♡</span><span class="badge">Выгодно</span><span class="dots"><i></i><i></i></span></div><div class="pr"><b class="num">129,99₽</b><span class="lbl">−18%</span></div><span class="old num">159,49₽</span><span class="nm">Макароны Barilla Казаречче 450 г</span><span class="rt num"><s>★</s> 4.9 · 5912 отзывов</span><span class="btn">В корзину</span></div>
+        <div class="cell"><div class="photo"><span class="heart">♡</span><span class="badge">Создали для вас</span><span class="dots"><i></i><i></i></span></div><div class="pr"><b class="num">64,99₽</b><span class="lbl">−18%</span></div><span class="old num">79,99₽</span><span class="nm">Макароны Gusto Di Roma Spaghettini 450 г</span><span class="rt num"><s>★</s> 4.9 · 286 отзывов</span><span class="btn">В корзину</span></div>
+      </div>
+    </div>
+    <div class="spec">
+      <span class="tag want">Хотим</span>
+      <div class="grid g2">
+        <div class="cell"><div class="photo"><span class="badge">Выгодно</span></div><div class="pr"><b class="num">129,99₽</b><span class="lbl">−18%</span></div><span class="old num">159,49₽</span><span class="nm">Макароны Barilla Казаречче 450 г</span><span class="rt num"><s>★</s> 4.9 · 5912 отзывов</span><span class="btn">В корзину</span></div>
+        <div class="cell"><div class="photo"><span class="badge">Создали для вас</span></div><div class="pr"><b class="num">64,99₽</b><span class="lbl">−18%</span></div><span class="old num">79,99₽</span><span class="nm">Макароны Gusto Di Roma Spaghettini 450 г</span><span class="rt num"><s>★</s> 4.9 · 286 отзывов</span><span class="btn">В корзину</span></div>
+      </div>
+          </div>
+  </div>
+</section>
+
+<section>
+  <h2>По раскладкам</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Где</th><th>Карточка каталога</th><th>Разделители</th><th>Избранное</th><th>Слайдер</th><th>Кнопка</th></tr></thead>
+    <tbody>
+      <tr><td>Полка, скролл</td><td>carousel</td><td><span class="pill off">Нет</span></td><td><span class="pill off">Нет</span></td><td><span class="pill off">Нет</span></td><td><span class="pill yes">Есть</span></td></tr>
+      <tr><td>Шторка, скролл</td><td>carousel</td><td><span class="pill off">Нет</span></td><td><span class="pill off">Нет</span></td><td><span class="pill off">Нет</span></td><td><span class="pill yes">Есть</span></td></tr>
+      <tr><td>Шторка, 2&nbsp;колонки</td><td>listing large</td><td><span class="pill off">Нет</span></td><td><span class="pill off">Нет</span></td><td><span class="pill off">Нет</span></td><td><span class="pill yes">Есть</span></td></tr>
+      <tr><td>Шторка, 3&nbsp;колонки</td><td>listing small, компактная</td><td><span class="pill off">Нет</span></td><td><span class="pill off">Нет</span></td><td><span class="pill off">Нет</span></td><td><span class="pill off">Нет</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>Что хотим особенно обсудить</h2>
+  <ul>
+    <li>Можем ли отключить разделитель.</li>
+    <li>Можем ли вынести отзывы в&nbsp;скобки в&nbsp;компактном варианте.</li>
+    <li>Как карточка ведёт себя на&nbsp;цветном фоне и&nbsp;на&nbsp;картинке в&nbsp;полке. Там тоже убираем разделитель и&nbsp;оставляем карточку отдельной плашкой.</li>
+    <li>Сроки и&nbsp;кто делает доработку.</li>
+  </ul>
+</section>
+
+<p class="foot">Макеты: Figma «[2.0] Плейсменты», секция «К созвону с каталогом».</p>
+
+</div>
+</body>
+</html>
